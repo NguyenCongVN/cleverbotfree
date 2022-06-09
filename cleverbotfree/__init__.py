@@ -59,16 +59,18 @@ class Cleverbot:
         self.browser: Any = self.p_w.firefox.launch()
         self.context: Any = self.browser.new_context(user_agent=UserAgent(
             fallback="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:96.0)" +
-            " Gecko/20100101 Firefox/96.0").random)
+                     " Gecko/20100101 Firefox/96.0").random)
+        self.page: Any = self.context.new_page()
 
     def get_form(self) -> None:
         """Open new browser context page."""
         while True:
             try:
-                self.page: Any = self.context.new_page()
-                self.page.goto(self.url,
-                               timeout=10000,
-                               wait_until="networkidle")
+                if 'Cleverbot' not in self.page.title():
+                    # self.page.goto(self.url,
+                    #                timeout=10000,
+                    #                wait_until="networkidle")
+                    self.page.goto(self.url, timeout=10000000, wait_until="networkidle")
             except (PwTimeout, BrokenPipeError):
                 self.page.close()
                 continue
@@ -76,6 +78,12 @@ class Cleverbot:
 
     def send_input(self, user_input: str) -> None:
         """ Submits your message through an input filter."""
+        formXpath = '//input[@value="understood, and agreed"]'
+        try:
+            if self.page.query_selector(f'xpath={formXpath}').is_visible():
+                self.page.click(f'xpath={formXpath}')
+        except:
+            pass
         f_one: str = r"<\/?[a-z]+>|<DOCTYPE"
         f_two: str = r"/<[^>]+>/g"
         if re.search(f_one, user_input) is not None or re.search(
@@ -114,7 +122,7 @@ class Cleverbot:
         while len(line) <= 1 and line != self.bot_response:
             line = self.page.text_content(self.reply)
             sleep(0.1)
-        self.page.close()
+        # self.page.close()
         return self.bot_response
 
     def single_exchange(self, user_input: str) -> str:
